@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Telegram Job Collector",
+  "version": "2.9.0",
+  "description": "Собирает вакансии из публичных Telegram-каналов и групп; устойчивый поиск в разреженных публичных группах.",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://t.me/*",
+    "https://api.telegram.org/*"
+  ],
+  "action": {
+    "default_title": "Telegram Job Collector",
+    "default_popup": "popup.html"
+  }
+}

@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Telegram Job Collector</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main>
+  <h1>Telegram Job Collector</h1>
+
+  <div class="notice">
+    <b>Без Telegram User API и без ИИ.</b><br>
+    Расширение читает публичные Telegram-каналы и поддерживаемые публичные группы, фильтрует сообщения и отправляет подходящие вакансии в твоего BotFather-бота.
+  </div>
+
+  <section>
+    <h2>1. Telegram-бот</h2>
+
+    <label for="botToken">Bot token</label>
+    <input id="botToken" type="password" placeholder="123456789:AA..." autocomplete="off">
+
+    <div class="inline">
+      <label class="grow" for="chatId">
+        Chat ID
+        <input id="chatId" type="text" placeholder="Определится автоматически">
+      </label>
+      <button id="detectChatBtn" type="button">Найти Chat ID</button>
+    </div>
+
+    <p class="hint">
+      Сначала открой созданного бота в Telegram и нажми <b>Start</b> или отправь ему <b>/start</b>.
+      Затем нажми «Найти Chat ID».
+    </p>
+
+    <button id="testBotBtn" type="button">Отправить тестовое сообщение</button>
+  </section>
+
+  <section>
+    <h2>2. Каналы</h2>
+
+    <label for="channels">Публичные каналы / группы — по одному в строке</label>
+    <textarea id="channels" rows="8" placeholder="https://t.me/channel_name&#10;https://t.me/public_group&#10;https://t.me/public_group/123456"></textarea>
+    <p class="hint">Для обычных каналов всё работает как раньше. Для публичных групп расширение использует публичные Telegram Post Widgets. Для <b>@edmarketclubjob</b> и <b>@vakansii_infobiz</b> bootstrap уже встроен. Для другой группы можно один раз вставить ссылку на любое её сообщение: <code>https://t.me/group/123456</code>.</p>
+  </section>
+
+  <section>
+    <h2>3. Фильтры</h2>
+
+    <div class="grid">
+      <label>
+        Не старше, дней
+        <input id="daysBack" type="number" min="1" max="30" value="7">
+      </label>
+
+      <label>
+        Минимальный балл
+        <input id="minScore" type="number" min="0" max="100" value="45">
+      </label>
+    </div>
+
+    <label class="check">
+      <input id="requireRemote" type="checkbox" checked>
+      Показывать только удалённые вакансии
+    </label>
+
+    <label class="check">
+      <input id="sendOnlyNew" type="checkbox" checked>
+      Не отправлять уже отправленные вакансии повторно
+    </label>
+  </section>
+
+  <div class="buttons">
+    <button id="saveBtn" type="button">Сохранить</button>
+    <button id="auditBtn" type="button">Аудит без отправки</button>
+    <button id="scanBtn" class="primary" type="button">Найти и отправить</button>
+  </div>
+
+  <p class="hint audit-hint">
+    <b>Аудит без отправки</b> использует тот же фильтр, но ничего не отправляет в Telegram.
+    Он нужен, чтобы проверить, не отбрасываются ли хорошие вакансии.
+  </p>
+
+  <div id="status" class="status">Готово к запуску.</div>
+
+  <div class="stats">
+    <div><span id="checkedCount">0</span><small>проверено</small></div>
+    <div><span id="matchedCount">0</span><small>подходит</small></div>
+    <div><span id="uncertainCount">0</span><small>формат ?</small></div>
+    <div><span id="rejectedCount">0</span><small>отклонено</small></div>
+    <div><span id="reviewCount">0</span><small>проверить</small></div>
+    <div><span id="sentCount">0</span><small>отправлено</small></div>
+  </div>
+
+  <div class="buttons">
+    <button id="clearHistoryBtn" class="danger" type="button">Очистить историю отправки</button>
+  </div>
+
+
+  <details id="sourceStatusDetails">
+    <summary>Статус источников</summary>
+    <div id="sourceStatus" class="source-status">Проверка ещё не запускалась.</div>
+  </details>
+
+  <details id="auditDetails">
+    <summary>Аудит фильтра — что расширение отклонило</summary>
+
+    <div id="auditSummary" class="audit-summary">
+      Аудит ещё не запускался.
+    </div>
+
+    <div class="audit-controls">
+      <label for="auditView">
+        Показывать
+        <select id="auditView">
+          <option value="uncertain">Формат работы не указан</option>
+          <option value="review">Другие сомнительные отказы</option>
+          <option value="rejected">Точно отклонённые</option>
+          <option value="all">Все проверенные</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="buttons">
+      <button id="exportAuditBtn" type="button">Скачать аудит JSON</button>
+      <button id="clearAuditBtn" type="button">Очистить аудит</button>
+    </div>
+
+    <p class="hint">
+      Вакансии с неуказанным форматом больше не теряются: они лежат отдельно в разделе
+      «Формат работы не указан» и не отправляются в основной поток.
+      В JSON нет Bot Token и Chat ID.
+    </p>
+
+    <div id="auditResults" class="results audit-results"></div>
+  </details>
+
+  <details>
+    <summary>Последние найденные вакансии</summary>
+    <div id="results" class="results"></div>
+  </details>
+
+  <script src="popup.js"></script>
+</main>
+</body>
+</html>

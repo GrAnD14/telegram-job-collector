@@ -1,0 +1,257 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  width: 600px;
+  max-height: 820px;
+  overflow-y: auto;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #f6f7f9;
+  color: #1f2328;
+}
+main { padding: 16px; }
+h1 { margin: 0 0 10px; font-size: 21px; }
+h2 { margin: 0 0 10px; font-size: 15px; }
+section {
+  background: white;
+  border: 1px solid #dde1e7;
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 12px;
+}
+.notice {
+  padding: 10px 12px;
+  background: #eef4ff;
+  border: 1px solid #d5e4ff;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+label {
+  display: block;
+  font-size: 12px;
+  font-weight: 650;
+  margin: 8px 0 5px;
+}
+input[type="text"], input[type="password"], input[type="number"], textarea, select {
+  width: 100%;
+  border: 1px solid #c9ced6;
+  border-radius: 8px;
+  padding: 9px;
+  font: inherit;
+  background: #fff;
+}
+textarea { resize: vertical; min-height: 125px; }
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.inline {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+}
+.grow { flex: 1; }
+.inline button { margin-bottom: 0; flex: 0 0 auto; }
+.check {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-weight: 500;
+}
+.hint {
+  margin: 8px 0;
+  color: #667085;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+button {
+  border: 1px solid #c9ced6;
+  background: white;
+  border-radius: 8px;
+  padding: 9px 11px;
+  cursor: pointer;
+  font-weight: 650;
+}
+.buttons button { flex: 1; }
+button.primary {
+  background: #1f6feb;
+  color: white;
+  border-color: #1f6feb;
+}
+button.danger { color: #b42318; }
+button:disabled { opacity: .55; cursor: wait; }
+.status {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #dde1e7;
+  font-size: 12px;
+  white-space: pre-wrap;
+  line-height: 1.4;
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+.stats div {
+  background: white;
+  border: 1px solid #dde1e7;
+  border-radius: 8px;
+  padding: 9px;
+  text-align: center;
+}
+.stats span { display: block; font-size: 18px; font-weight: 750; }
+.stats small { color: #667085; }
+details {
+  margin-top: 12px;
+  background: #fff;
+  border: 1px solid #dde1e7;
+  border-radius: 8px;
+  padding: 10px;
+}
+summary { cursor: pointer; font-weight: 650; font-size: 12px; }
+.results { margin-top: 10px; }
+.result {
+  border-top: 1px solid #e7e9ed;
+  padding: 9px 0;
+}
+.result:first-child { border-top: 0; }
+.result a {
+  color: #0969da;
+  text-decoration: none;
+  font-size: 12px;
+}
+.result .meta { color: #667085; font-size: 11px; margin-top: 3px; }
+
+
+.audit-hint {
+  margin-top: 8px;
+}
+
+.audit-summary {
+  margin-top: 10px;
+  padding: 9px 10px;
+  background: #f6f7f9;
+  border: 1px solid #e2e6eb;
+  border-radius: 8px;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.audit-controls {
+  margin-top: 10px;
+}
+
+.audit-controls label {
+  margin: 0;
+}
+
+.audit-controls select {
+  margin-top: 5px;
+}
+
+.audit-result {
+  padding: 10px 0;
+}
+
+.audit-result .audit-title {
+  font-weight: 700;
+}
+
+.audit-result .audit-reason {
+  margin-top: 5px;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.audit-result .audit-facts {
+  margin-top: 4px;
+  color: #667085;
+  font-size: 10.5px;
+  line-height: 1.4;
+}
+
+.audit-result .audit-preview {
+  margin-top: 5px;
+  font-size: 10.5px;
+  color: #3f4752;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.audit-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  margin-right: 5px;
+  border-radius: 999px;
+  border: 1px solid #c9ced6;
+  font-size: 9px;
+  font-weight: 750;
+  vertical-align: 1px;
+}
+
+.audit-high .audit-badge {
+  border-color: #b42318;
+  color: #b42318;
+}
+
+.audit-medium .audit-badge {
+  border-color: #9a6700;
+  color: #7a5200;
+}
+
+.audit-low .audit-badge,
+.audit-accepted .audit-badge {
+  color: #667085;
+}
+
+@media (max-width: 620px) {
+  .stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+
+.audit-uncertain .audit-badge {
+  border-color: #9a6700;
+  color: #7a5200;
+}
+
+.audit-uncertain {
+  background: #fffdf5;
+}
+
+
+.source-status {
+  margin-top: 10px;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.source-row {
+  padding: 7px 0;
+  border-bottom: 1px solid #e8ebef;
+}
+
+.source-row:last-child {
+  border-bottom: 0;
+}
+
+.source-row b {
+  display: inline-block;
+  min-width: 130px;
+}
+
+.source-ok { color: #176b3a; }
+.source-warn { color: #8a5a00; }
+.source-error { color: #b42318; }
