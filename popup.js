@@ -959,11 +959,55 @@ function splitSections(text) {
 
   return sections;
 }
+function sanitizeUnicode(text = "") {
+  const input = String(text);
+  let result = "";
+
+  for (let i = 0; i < input.length; i++) {
+    const code = input.charCodeAt(i);
+
+    // High surrogate: keep it only when followed by a valid low surrogate.
+    if (code >= 0xD800 && code <= 0xDBFF) {
+      const next = input.charCodeAt(i + 1);
+      if (next >= 0xDC00 && next <= 0xDFFF) {
+        result += input[i] + input[i + 1];
+        i++;
+      } else {
+        result += "\uFFFD";
+      }
+      continue;
+    }
+
+    // Lone low surrogate is not valid Unicode.
+    if (code >= 0xDC00 && code <= 0xDFFF) {
+      result += "\uFFFD";
+      continue;
+    }
+
+    result += input[i];
+  }
+
+  return result;
+}
+
+function safeUnicodeSlice(text, maxLength) {
+  const input = sanitizeUnicode(text);
+  let end = Math.min(input.length, Math.max(0, maxLength));
+
+  // Never cut between the two UTF-16 code units of an emoji/non-BMP character.
+  if (end > 0 && end < input.length) {
+    const lastCode = input.charCodeAt(end - 1);
+    if (lastCode >= 0xD800 && lastCode <= 0xDBFF) end--;
+  }
+
+  return input.slice(0, end);
+}
+
 function smartTruncate(text, maxLength) {
-  const cleaned = cleanText(text);
+  const cleaned = sanitizeUnicode(cleanText(text));
   if (cleaned.length <= maxLength) return cleaned;
 
-  const candidate = cleaned.slice(0, maxLength);
+  const candidate = safeUnicodeSlice(cleaned, maxLength);
 
   // Сначала пытаемся закончить на переносе строки.
   const lastBreak = candidate.lastIndexOf("\n");
@@ -1494,9 +1538,11 @@ async function detectChatId() {
 }
 
 async function sendTelegramMessage(token, chatId, text) {
+  const safeText = safeUnicodeSlice(text, TELEGRAM_MESSAGE_LIMIT);
+
   return await botApi(token, "sendMessage", {
     chat_id: chatId,
-    text: text.slice(0, TELEGRAM_MESSAGE_LIMIT),
+    text: safeText,
     parse_mode: "HTML",
     disable_web_page_preview: true
   });
