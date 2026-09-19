@@ -1,5 +1,5 @@
 // =============================================================
-// Telegram Job Collector 2.9
+// Telegram Job Collector 2.9.2
 // Публичные Telegram-каналы и группы -> фильтр -> Telegram Bot API
 // Без Telegram User API и без ИИ.
 // =============================================================
@@ -1229,6 +1229,59 @@ function isNetworkPartnerScheme(text) {
   return hits >= 3 || (partner && turnover && (cashback || percentage));
 }
 
+// Personal exclusions and risk heuristics are independent of the priority score.
+function riskFilterText(text) {
+  return cleanText(String(text || "").normalize("NFKC")
+    .replace(/[\u200b-\u200d\u2060\ufeff]/g, "")
+    .replace(/[\\*_\x60]/g, ""));
+}
+
+function hasTradingMention(text) {
+  return /(?:^|[^\p{L}\p{N}])(?:трейдинг[а-яё]*|трединг[а-яё]*|трейдер[а-яё]*|тредер[а-яё]*|trading|traiding|trader|traders)(?=$|[^\p{L}\p{N}])/iu.test(riskFilterText(text));
+}
+
+const SIMPLE_JOB_HIGH_SALARY_RUB = 90000;
+
+function suspiciousSimpleJob(text) {
+  const raw = riskFilterText(text);
+  // Inspect the salary clause, not phone numbers, company turnover or annual bonuses.
+  const salaryClause = raw.match(/(?:зарплата|з\/?п|оклад|доход|оплата)\s*[:—–-]?\s*([^\n]+)/i)?.[0];
+  if (!salaryClause || /(?:в|за)\s*год|годов|\b(?:usd|eur|annual)\b|[$€]/i.test(salaryClause)) return null;
+  const normalizedSalaryClause = salaryClause
+    .replace(/(\d+)\s*тыс(?:яч[а-яё]*)?\.?/gi, "$1к")
+    .replace(/(\d{2,3})\s*[–—-]\s*(\d{2,3})\s*([кk])/gi, "$1$3 – $2$3");
+  const salary = extractSalary(normalizedSalaryClause);
+  const amounts = [...salary.matchAll(/\d{1,3}(?:[ \u00a0]\d{3})+|\d+(?:[.,]\d+)?\s*[кk]|\d{4,}/gi)]
+    .map(match => {
+      const value = match[0].replace(/\s/g, "").replace(",", ".");
+      return parseFloat(value) * (/[кk]$/i.test(value) ? 1000 : 1);
+    });
+  // Use the lower end of a range, so "30–100k" is not treated as a 100k promise.
+  if (!amounts.length || Math.min(...amounts) < SIMPLE_JOB_HIGH_SALARY_RUB) return null;
+
+  const duties = raw.match(/(?:обязанности|задачи|что (?:нужно|предстоит) делать|что делать)(?:\s*:\s*|[ \t]*\n)([\s\S]*?)(?=(?:требования|условия|что предлагаем|мы предлагаем|контакты|отклик)(?:\s*:|[ \t]*\n)|$)/i)?.[1]?.trim();
+  if (!duties) return null;
+  const itemSeparator = /[•▪▫●]|\n\s*(?:[-—–]|\d+[.)])\s*/;
+  const items = duties.split(itemSeparator.test(duties) ? itemSeparator : /\n|;/)
+    .map(x => x.replace(/^[\s—–\-\d.)]+/, "").trim()).filter(Boolean);
+  if (!items.length || items.length > 3 || duties.split(/\s+/).length > 70) return null;
+  const simpleSignals = [
+    /отвечать.{0,50}(?:чат|сообщени|клиент)/i,
+    /готов[а-яё]*\s+(?:ответ|шаблон)|по\s+(?:шаблон|скрипт)/i,
+    /передавать.{0,60}(?:коллег|специалист|руководител)/i,
+    /(?:записывать|фиксировать).{0,60}(?:разговор|результат|обращени)/i,
+    /(?:вносить|вводить|переносить|копировать).{0,40}(?:данные|текст|таблиц)/i
+  ].filter(pattern => pattern.test(duties.replace(/\s+/g, " "))).length;
+  if (simpleSignals < 2) return null;
+
+  const beginner = /без\s+опыта|опыт\s+не\s+(?:нужен|требуется)|научим\s+(?:всему|с\s+нуля)/i.test(raw);
+  const flexible = /(?:смены?|работа|занятость)\s*(?:от\s*)?[1-4]\s*(?:ч(?:ас)?[а-яё]*\.?)|для\s+совмещения/i.test(raw);
+  const quickHire = /резюме\s+не\s+(?:обязательно|нужно)|быстр[а-яё]*\s+при[её]м|(?:выход|начать)\s+(?:сегодня|завтра)/i.test(raw);
+  const unknownCompany = /компания\s*:\s*(?:не\s+указана|неизвестна)/i.test(raw) || extractCompany(raw) === "не указана";
+  if (!beginner || !(flexible || quickHire || unknownCompany)) return null;
+  return "подозрительная вакансия: высокая зарплата за короткий список простых обязанностей без опыта";
+}
+
 function analyzePost(text, dateIso, settings, links = []) {
   const reasons = [];
   const warnings = [];
@@ -1245,6 +1298,13 @@ function analyzePost(text, dateIso, settings, links = []) {
     reject,
     uncertainReason: null
   });
+
+  if (hasTradingMention(text)) {
+    return rejected("исключённая сфера: трейдинг / trading / traiding");
+  }
+
+  const simpleJobRisk = suspiciousSimpleJob(text);
+  if (simpleJobRisk) return rejected(simpleJobRisk);
 
   if (isAdvertisingPost(text, links)) {
     return rejected("реклама каналов/подборки, а не вакансия");
@@ -1620,6 +1680,8 @@ let currentAudit = null;
 function classifyRejectCode(reject = "") {
   const r = normalize(reject);
   if (!r) return "none";
+  if (r.includes("исключенная сфера")) return "excluded_trading";
+  if (r.includes("подозрительная вакансия")) return "suspicious_simple_job";
   if (r.includes("реклама каналов") || r.includes("подборки")) return "advertising";
   if (r.includes("пост соискателя")) return "jobseeker";
   if (r.includes("недостаточно признаков")) return "vacancy_confidence";
@@ -1649,6 +1711,12 @@ function reviewPriorityFor(post, analysis) {
   }
 
   const code = classifyRejectCode(analysis.reject);
+  if (code === "excluded_trading") {
+    return { level: "low", note: "исключено по личному фильтру сферы деятельности" };
+  }
+  if (code === "suspicious_simple_job") {
+    return { level: "medium", note: "сочетание признаков риска; не отправляется автоматически, доступно для проверки" };
+  }
   const text = post.text || "";
   const title = extractTitle(text);
   const workFormat = classifyWorkFormat(text);
